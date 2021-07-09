@@ -1,6 +1,15 @@
 # STELLAROM
 Developing a ROM for the Atari 2600 (dev name "STELLA") 
 
+## Usage
+1. build, then install `vasm6502_oldstyle` in the root directory of this repo
+2. `./assemble.sh` (on systems with `bash` - translate the call to CMD or PowerShell yourself, sorry)
+3. install [Stella](https://stella-emu.github.io/)
+4. `stella a.out`
+
+## Screenshot
+﻿<img width="959" alt="image" src="https://user-images.githubusercontent.com/1096993/125014856-6a3d6480-e03c-11eb-9e2d-cf2d83df50fa.png">
+
 ## References
 
 - [STELLA PROGRAMMER'S GUIDE (1979)](https://www.atarihq.com/danb/files/stella.pdf)
