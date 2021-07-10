@@ -8,7 +8,7 @@ Developing a ROM for the Atari 2600 (dev name "STELLA")
 4. `stella a.out`
 
 ## Screenshot
-﻿<img width="959" alt="image" src="https://user-images.githubusercontent.com/1096993/125014856-6a3d6480-e03c-11eb-9e2d-cf2d83df50fa.png">
+![A rainbow background with a thin vertical red line](/screenshot.png)
 
 ## References
 

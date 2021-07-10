@@ -34,6 +34,8 @@ clear_zpage:
     dex
     bne clear_zpage
 ; Postconditions: A = 0, X = 0
+    lda #33
+    sta COLUP0
 
 main:
     lda #0
@@ -47,30 +49,43 @@ main:
     sta WSYNC
     .endr
 
+    lda #43
+    sta TIM64T
+
     lda #0
     sta VSYNC
 
-    ; 37 lines of VBLANK
-    .rept (VBLANK_LINES - 3)
+WaitForVblankEnd:
+    lda INTIM
+    bne WaitForVblankEnd
+    ldy #191
+
     sta WSYNC
-    .endr
+    sta VBLANK
+    lda #$F0
+    sta HMM0
 
-    lda $00
-    sta VSYNC
-
-    ldx #0
-    .rept (KERNAL_LINES)
-    inx
-    stx COLUBK
     sta WSYNC
-    .endr
+    sta HMOVE
 
-    lda #%01000010
-    sta VBLANK ; end of screen - enter blanking
-
-    .rept (OVERSCAN_LINES)
+ScanLoop:
     sta WSYNC
-    .endr
+    lda #2
+    sta ENAM0
+    tya
+    sta COLUBK
+    dey
+    bne ScanLoop
+
+    lda #2
+    sta WSYNC
+    sta VBLANK
+
+    ldx #30
+OverScanWait:
+    sta WSYNC
+    dex
+    bne OverScanWait
 
     jmp main
 
