@@ -11,6 +11,13 @@ RAM_TOP = $FF
 ROM_BASE = $1000
 ROM_TOP = $1FFF
 
+; Statically allocated RAM variable locations
+    .dsect
+    .org RAM_BASE
+YPosFromBot: byt
+VisibleMissileLine: byt
+    .dend
+
   .org ROM_BASE
 reset:
     ; update status register
@@ -34,8 +41,16 @@ clear_zpage:
     dex
     bne clear_zpage
 ; Postconditions: A = 0, X = 0
-    lda #33
+    lda #$BE ; Bright green
     sta COLUP0
+
+    lda #80
+    sta YPosFromBot ; set initial Y position
+
+    ; Quad width sprite & missiles
+    lda #$20
+    sta NUSIZ0
+
 
 main:
     lda #0
@@ -68,10 +83,30 @@ WaitForVblankEnd:
     sta WSYNC
     sta HMOVE
 
+    dec YPosFromBot
+    bne ScanLoop
+    lda #192
+    sta YPosFromBot
+
+
 ScanLoop:
     sta WSYNC
+
+    cpy YPosFromBot
+    bne SkipActivateMissile
+    lda #8
+    sta VisibleMissileLine
+SkipActivateMissile:
+    lda #0
+    sta ENAM0
+
+    lda VisibleMissileLine
+    beq FinishMissile
+IsMissileOn:
     lda #2
     sta ENAM0
+    dec VisibleMissileLine
+FinishMissile:
     sty COLUBK
     dey
     bne ScanLoop
