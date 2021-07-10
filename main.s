@@ -72,8 +72,7 @@ ScanLoop:
     sta WSYNC
     lda #2
     sta ENAM0
-    tya
-    sta COLUBK
+    sty COLUBK
     dey
     bne ScanLoop
 
