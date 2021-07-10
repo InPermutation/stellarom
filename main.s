@@ -16,6 +16,7 @@ ROM_TOP = $1FFF
     .org RAM_BASE
 YPosFromBot: byt
 VisibleMissileLine: byt
+MissileColor: byt
     .dend
 
   .org ROM_BASE
@@ -42,7 +43,7 @@ clear_zpage:
     bne clear_zpage
 ; Postconditions: A = 0, X = 0
     lda #$BE ; Bright green
-    sta COLUP0
+    sta MissileColor
 
     lda #80
     sta YPosFromBot ; set initial Y position
@@ -50,7 +51,6 @@ clear_zpage:
     ; Quad width sprite & missiles
     lda #$20
     sta NUSIZ0
-
 
 main:
     lda #0
@@ -70,6 +70,38 @@ main:
     lda #0
     sta VSYNC
 
+    lda #%00010000 ; Down
+    bit SWCHA
+    bne SkipMoveDown
+    inc YPosFromBot
+SkipMoveDown:
+    lda #%00100000 ; Up
+    bit SWCHA
+    bne SkipMoveUp
+    dec YPosFromBot
+SkipMoveUp:
+    ldx #0
+    lda #%01000000 ; Left
+    bit SWCHA
+    bne SkipMoveLeft
+    ldx #$10 ; HM_ $10 = move left 1px/frame
+SkipMoveLeft:
+    lda #%10000000 ; Right
+    bit SWCHA
+    bne SkipMoveRight
+    ldx #$F0 ; HM_ $F0 = move right 1px/frame
+SkipMoveRight:
+    stx HMM0
+    lda INPT4
+    bmi ButtonNotPressed
+    lda MissileColor
+    adc #1
+    sta MissileColor
+ButtonNotPressed:
+    lda MissileColor
+    sta COLUP0
+
+
 WaitForVblankEnd:
     lda INTIM
     bne WaitForVblankEnd
@@ -77,17 +109,9 @@ WaitForVblankEnd:
 
     sta WSYNC
     sta VBLANK
-    lda #$F0
-    sta HMM0
 
     sta WSYNC
     sta HMOVE
-
-    dec YPosFromBot
-    bne ScanLoop
-    lda #192
-    sta YPosFromBot
-
 
 ScanLoop:
     sta WSYNC
