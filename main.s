@@ -118,7 +118,7 @@ ButtonNotPressed:
 WaitForVblankEnd:
     lda INTIM
     bne WaitForVblankEnd
-    ldy #191
+    ldy #KERNAL_LINES - 1
 
     sta WSYNC
     sta VBLANK
@@ -168,7 +168,7 @@ YesCollision:
     sta WSYNC
     sta VBLANK
 
-    ldx #30
+    ldx #OVERSCAN_LINES
 OverScanWait:
     sta WSYNC
     dex
