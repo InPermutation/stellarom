@@ -18,6 +18,7 @@ YPosFromBot: byt
 VisiblePlayerLine: byt
 PlayerColor: byt
 PlayerBuffer: byt
+PlayfieldCounter: blk 3
     .dend
 
   .org ROM_BASE
@@ -60,6 +61,9 @@ clear_zpage:
 
     lda #$F0
     sta HMM1
+
+    lda #$86
+    sta COLUPF
 
 main:
     lda #0
@@ -113,6 +117,21 @@ SkipMoveRight:
 ButtonNotPressed:
     lda PlayerColor
     sta COLUP0
+
+    clc
+    lda PlayfieldCounter
+    sta PF2
+    adc #1
+    sta PlayfieldCounter
+    lda PlayfieldCounter+1
+    sta PF1
+    adc #0
+    sta PlayfieldCounter+1
+    lda PlayfieldCounter+2
+    sta PF0
+    adc #0
+    sta PlayfieldCounter+2
+
 
 
 WaitForVblankEnd:
