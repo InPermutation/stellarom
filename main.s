@@ -15,8 +15,9 @@ ROM_TOP = $1FFF
     .dsect
     .org RAM_BASE
 YPosFromBot: byt
-VisibleMissileLine: byt
-MissileColor: byt
+VisiblePlayerLine: byt
+PlayerColor: byt
+PlayerBuffer: byt
     .dend
 
   .org ROM_BASE
@@ -43,7 +44,7 @@ clear_zpage:
     bne clear_zpage
 ; Postconditions: A = 0, X = 0
     lda #$BE ; Bright green
-    sta MissileColor
+    sta PlayerColor
 
     lda #80
     sta YPosFromBot ; set initial Y position
@@ -108,9 +109,9 @@ SkipMoveRight:
     stx HMP0
     lda INPT4
     bmi ButtonNotPressed
-    inc MissileColor
+    inc PlayerColor
 ButtonNotPressed:
-    lda MissileColor
+    lda PlayerColor
     sta COLUP0
 
 
@@ -128,21 +129,25 @@ WaitForVblankEnd:
 ScanLoop:
     sta WSYNC
 
-    cpy YPosFromBot
-    bne SkipActivateMissile
-    lda #8
-    sta VisibleMissileLine
-SkipActivateMissile:
-    lda #0
+    lda PlayerBuffer
     sta GRP0
 
-    ldx VisibleMissileLine
-    beq FinishMissile
-IsMissileOn:
+CheckActivatePlayer:
+    cpy YPosFromBot
+    bne SkipActivatePlayer
+    lda #8
+    sta VisiblePlayerLine
+SkipActivatePlayer:
+    lda #0
+    sta PlayerBuffer
+
+    ldx VisiblePlayerLine
+    beq FinishPlayer
+IsPlayerOn:
     lda BigHeadGraphic-1,X
-    sta GRP0
-    dec VisibleMissileLine
-FinishMissile:
+    sta PlayerBuffer
+    dec VisiblePlayerLine
+FinishPlayer:
     lda #%10000000
     bit CXM1P
     beq NoCollision
@@ -156,6 +161,8 @@ YesCollision:
     bne ScanLoop
 
     sta CXCLR
+    lda #0
+    sta PlayerBuffer
 
     lda #2
     sta WSYNC
