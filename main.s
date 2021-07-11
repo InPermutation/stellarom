@@ -19,7 +19,11 @@ VisiblePlayerLine: byt
 PlayerColor: byt
 PlayerBuffer: byt
 PlayfieldCounter: blk 3
+ClearBk: byt
     .dend
+
+PFCOL = $86
+FLASHCOL = $1E ; $00 would disable the flash behavior, use $01 for black
 
   .org ROM_BASE
 reset:
@@ -62,7 +66,7 @@ clear_zpage:
     lda #$F0
     sta HMM1
 
-    lda #$86
+    lda #PFCOL
     sta COLUPF
 
 main:
@@ -132,6 +136,15 @@ ButtonNotPressed:
     adc #0
     sta PlayfieldCounter+2
 
+    lda #0
+    sta ClearBk
+    lda #%10000000
+    bit CXM1P
+    beq NoCollision
+    lda #FLASHCOL
+    sta ClearBk
+NoCollision:
+    sta CXCLR
 
 
 WaitForVblankEnd:
@@ -150,6 +163,13 @@ ScanLoop:
 
     lda PlayerBuffer
     sta GRP0
+    lda ClearBk
+    beq NoFlash
+    sta COLUBK
+    jmp HadFlash
+NoFlash:
+    sty COLUBK
+HadFlash:
 
 CheckActivatePlayer:
     cpy YPosFromBot
@@ -167,19 +187,9 @@ IsPlayerOn:
     sta PlayerBuffer
     dec VisiblePlayerLine
 FinishPlayer:
-    lda #%10000000
-    bit CXM1P
-    beq NoCollision
-    lda YPosFromBot
-    sta COLUBK
-    jmp YesCollision
-NoCollision:
-    sty COLUBK
-YesCollision:
     dey
     bne ScanLoop
 
-    sta CXCLR
     lda #0
     sta PlayerBuffer
 
