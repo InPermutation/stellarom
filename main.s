@@ -48,9 +48,17 @@ clear_zpage:
     lda #80
     sta YPosFromBot ; set initial Y position
 
-    ; Quad width sprite & missiles
+    lda #2
+    sta ENAM1
+    lda #33
+    sta COLUP1
+
+    ; Quad width sprite & missiles for P1/M1
     lda #$20
-    sta NUSIZ0
+    sta NUSIZ1
+
+    lda #$F0
+    sta HMM1
 
 main:
     lda #0
@@ -85,18 +93,22 @@ SkipMoveUp:
     bit SWCHA
     bne SkipMoveLeft
     ldx #$10 ; HM_ $10 = move left 1px/frame
+
+    lda #%00001000 ; a 1 in D3 of REFP0 says make it mirror
+    sta REFP0
 SkipMoveLeft:
     lda #%10000000 ; Right
     bit SWCHA
     bne SkipMoveRight
     ldx #$F0 ; HM_ $F0 = move right 1px/frame
+    lda #%00000000 ; moving right -> don't mirror
+    sta REFP0
+
 SkipMoveRight:
-    stx HMM0
+    stx HMP0
     lda INPT4
     bmi ButtonNotPressed
-    lda MissileColor
-    adc #1
-    sta MissileColor
+    inc MissileColor
 ButtonNotPressed:
     lda MissileColor
     sta COLUP0
@@ -122,18 +134,28 @@ ScanLoop:
     sta VisibleMissileLine
 SkipActivateMissile:
     lda #0
-    sta ENAM0
+    sta GRP0
 
-    lda VisibleMissileLine
+    ldx VisibleMissileLine
     beq FinishMissile
 IsMissileOn:
-    lda #2
-    sta ENAM0
+    lda BigHeadGraphic-1,X
+    sta GRP0
     dec VisibleMissileLine
 FinishMissile:
+    lda #%10000000
+    bit CXM1P
+    beq NoCollision
+    lda YPosFromBot
+    sta COLUBK
+    jmp YesCollision
+NoCollision:
     sty COLUBK
+YesCollision:
     dey
     bne ScanLoop
+
+    sta CXCLR
 
     lda #2
     sta WSYNC
@@ -147,6 +169,16 @@ OverScanWait:
 
     jmp main
 
+
+BigHeadGraphic:
+    .byte %00111100
+    .byte %01111110
+    .byte %11000001
+    .byte %10111111
+    .byte %11111111
+    .byte %11101011
+    .byte %01111110
+    .byte %00111100
 
 irq_brk:
     ; The 6507 has RESb tied high, so this can only be reached by BRK
