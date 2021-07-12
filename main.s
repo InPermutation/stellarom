@@ -11,19 +11,17 @@ RAM_TOP = $FF
 ROM_BASE = $1000
 ROM_TOP = $1FFF
 
+PLAYER_MINIMUM_YPOS = BigHeadGraphicEnd - BigHeadGraphic + 2
+
 ; Statically allocated RAM variable locations
     .dsect
     .org RAM_BASE
 YPosFromBot: byt
 VisiblePlayerLine: byt
-PlayerColor: byt
+YVel: byt
+JumpLatch: byt ; 0 if the player has not already jumped, 1 if the player has already jumped
 PlayerBuffer: byt
-PlayfieldCounter: blk 3
-ClearBk: byt
     .dend
-
-PFCOL = $86
-FLASHCOL = $1E ; $00 would disable the flash behavior, use $01 for black
 
   .org ROM_BASE
 reset:
@@ -49,25 +47,10 @@ clear_zpage:
     bne clear_zpage
 ; Postconditions: A = 0, X = 0
     lda #$BE ; Bright green
-    sta PlayerColor
+    sta COLUP0
 
-    lda #80
+    lda #PLAYER_MINIMUM_YPOS + 20
     sta YPosFromBot ; set initial Y position
-
-    lda #2
-    sta ENAM1
-    lda #33
-    sta COLUP1
-
-    ; Quad width sprite & missiles for P1/M1
-    lda #$20
-    sta NUSIZ1
-
-    lda #$F0
-    sta HMM1
-
-    lda #PFCOL
-    sta COLUPF
 
 main:
     lda #0
@@ -87,16 +70,6 @@ main:
     lda #0
     sta VSYNC
 
-    lda #%00010000 ; Down
-    bit SWCHA
-    bne SkipMoveDown
-    inc YPosFromBot
-SkipMoveDown:
-    lda #%00100000 ; Up
-    bit SWCHA
-    bne SkipMoveUp
-    dec YPosFromBot
-SkipMoveUp:
     ldx #0
     lda #%01000000 ; Left
     bit SWCHA
@@ -115,41 +88,50 @@ SkipMoveLeft:
 
 SkipMoveRight:
     stx HMP0
+
+
     lda INPT4
-    bmi ButtonNotPressed
-    inc PlayerColor
-ButtonNotPressed:
-    lda PlayerColor
-    sta COLUP0
-
-    clc
-    lda PlayfieldCounter
-    sta PF2
-    adc #1
-    sta PlayfieldCounter
-    lda PlayfieldCounter+1
-    sta PF1
-    adc #0
-    sta PlayfieldCounter+1
-    lda PlayfieldCounter+2
-    sta PF0
-    adc #0
-    sta PlayfieldCounter+2
-
+    bmi NoJump
+    lda JumpLatch
+    bne AfterJump
+    lda YPosFromBot
+    cmp #PLAYER_MINIMUM_YPOS + 2
+    bpl AfterJump
+YesJump:
+    inc JumpLatch
+    lda #8
+    sta YVel
+    jmp AfterJump
+NoJump:
     lda #0
-    sta ClearBk
-    lda #%10000000
-    bit CXM1P
-    beq NoCollision
-    lda #FLASHCOL
-    sta ClearBk
+    sta JumpLatch
+AfterJump:
+    clc
+    lda #PLAYER_MINIMUM_YPOS
+    sbc YVel
+    cmp YPosFromBot
+    bmi HaltFall
+    lda #0
+    sta YVel
+    jmp Gravity
+HaltFall:
+    clc
+    lda YVel
+    adc YPosFromBot
+    sta YPosFromBot
+
+Gravity:
+    dec YVel
+
 NoCollision:
-    sta CXCLR
+    sta CXCLR ; TODO: collisions
 
 
 WaitForVblankEnd:
     lda INTIM
     bne WaitForVblankEnd
+
+KernalStart:
     ldy #KERNAL_LINES - 1
 
     sta WSYNC
@@ -163,18 +145,12 @@ ScanLoop:
 
     lda PlayerBuffer
     sta GRP0
-    lda ClearBk
-    beq NoFlash
-    sta COLUBK
-    jmp HadFlash
-NoFlash:
     sty COLUBK
-HadFlash:
 
 CheckActivatePlayer:
     cpy YPosFromBot
     bne SkipActivatePlayer
-    lda #8
+    lda #(BigHeadGraphicEnd - BigHeadGraphic)
     sta VisiblePlayerLine
 SkipActivatePlayer:
     lda #0
@@ -215,6 +191,7 @@ BigHeadGraphic:
     .byte %11101011
     .byte %01111110
     .byte %00111100
+BigHeadGraphicEnd:
 
 irq_brk:
     ; The 6507 has RESb tied high, so this can only be reached by BRK
